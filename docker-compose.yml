@@ -1,0 +1,59 @@
+version: '1.2'
+
+services:
+  postgres_data:
+    image: postgres:13.3
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "dw_uniesp", "-U" ]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=dw_uniesp
+      - APP_DB_USER=docker
+      - APP_DB_PASS=docker
+      - APP_DB_NAME=docker
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+  
+  postgres-metabase2:
+    image: postgres:15
+    container_name: postgres-metabase2
+    environment:
+      POSTGRES_DB: metabase
+      POSTGRES_USER: metabase
+      POSTGRES_PASSWORD: metabase_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_metabase_data:/var/lib/postgresql/data
+
+  metabase:
+    image: metabase/metabase:v0.47.1
+    container_name: metabase
+    environment:
+      - MB_DB_TYPE=postgres
+      - MB_DB_DBNAME=metabase
+      - MB_DB_PORT=5432
+      - MB_DB_USER=metabase
+      - MB_DB_PASS=metabase_password
+      - MB_DB_HOST=postgres-metabase2
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres-metabase2
+    volumes:
+      - metabase_data:/metabase-data
+  
+networks:
+  metabase_network:
+
+volumes:
+  postgres_data:
+  metabase_data:
+  postgres_metabase_data:
